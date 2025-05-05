@@ -38,7 +38,11 @@ class binance():
     def run_web_sock(self):
         while True:
             try:
-                wss ='wss://fstream.binance.com/ws/btcusdt@trade'
+                # wss ='wss://fstream.binance.com/ws/btcusdt@trade'
+                # wss ='wss://testnet.binance.vision/ws/btcusdt@trade'
+                # wss ='wss://ws-dapi.binance.vision/ws-dapi/v1/btcusdt@trade'
+                # wss ='wss://fstream.testnet.binance.vision/ws/btcusdt@trade'
+                wss ='wss://stream.binancefuture.com/ws/btcusdt@trade' # Тестовый сервер фьючерсов бинанса
                 # wss = 'wss://stream.binance.com:9443/ws/btcusdt@trade'
                 wsa = websocket.WebSocketApp(wss,
                                              on_message=self.on_message,
@@ -66,12 +70,133 @@ class main():
         wb = binance()
         wb.start()
 
+        exchangeBinance = ccxt.binance({
+            'apiKey': config.API_KEY,
+            'secret': config.API_SECRET,
+            'enableRateLimit': True,
+
+            'options': {
+                'defaultType': 'future',
+                'urls': {
+                    'api': 'https://testnet.binancefuture.com',
+                    'test': 'https://testnet.binancefuture.com',
+                },
+            },
+        })
+
+        # Переключаем ccxt на песочницу Бинанса
+        exchangeBinance.set_sandbox_mode(True)
+
+        symbol = 'BTCUSDT'  # выбираем торговую пару
+        # buyPrice = 0  # устанавливаем начальную цену покупки
+        # sellPrice = 0  # устанавливаем начальную цену покупки
+        amount = 0.01  # устанавливаем объем монет для покупки
+        # profit_percent = 1  # задаем процент прибыли
+
+        currentPrice = float(wb.ticker_socket['p'])
+        oldCurrentPrice = currentPrice
+        openOrders = exchangeBinance.fetch_open_orders(symbol)
+        sellPrice = round(currentPrice * 1.0001)
+        buyPrice = round(currentPrice / 1.0001)
+        orderBuy = dict(symbol=symbol, type='limit', side='buy', price=buyPrice, amount=amount)
+        orderSell = dict(symbol=symbol, type='limit', side='sell', price=sellPrice, amount=amount)
+
+        if len(openOrders) == 0:
+            if orderBuy:
+                returnOrderBuy = exchangeBinance.create_order(**orderBuy)
+                # clientOrderBuyId = returnOrderBuy['clientOrderId']
+                lastPriceBuy = returnOrderBuy['price']
+
+            if orderSell:
+                returnOrderSell = exchangeBinance.create_order(**orderSell)
+                # clientOrderSellId = returnOrderSell['clientOrderId']
+                lastPriceSell = returnOrderSell['price']
+
         # Вывод данных
         while True:
-            # time.sleep(5)
-            # print(wb.ticker_socket[3])
-            # print(int(float(wb.ticker_socket['p'])))
-            # print(float(wb.ticker_socket['p']))
+            if float(wb.ticker_socket['p']) != oldCurrentPrice:
+                currentPrice = float(wb.ticker_socket['p'])
+                oldCurrentPrice = currentPrice
+                openOrders = exchangeBinance.fetch_open_orders(symbol)
+
+                if len(openOrders) != 2:
+                    currentPrice = float(wb.ticker_socket['p'])
+                    orders = exchangeBinance.cancel_all_orders(symbol)
+
+                    if orderBuy:
+                        buyPrice = round(currentPrice / 1.0001)
+                        orderBuy = dict(symbol=symbol, type='limit', side='buy', price=buyPrice, amount=amount)
+                        returnOrderBuy = exchangeBinance.create_order(**orderBuy)
+                        # clientOrderBuyId = returnOrderBuy['clientOrderId']
+                        # lastPriceBuy = returnOrderBuy['price']
+
+                    if orderSell:
+                        sellPrice = round(currentPrice * 1.0001)
+                        orderSell = dict(symbol=symbol, type='limit', side='sell', price=sellPrice, amount=amount)
+                        returnOrderSell = exchangeBinance.create_order(**orderSell)
+                        # clientOrderSellId = returnOrderSell['clientOrderId']
+                        # lastPriceSell = returnOrderSell['price']
+
+                print(currentPrice)
+ # ---------------------
+
+
+                    # if openOrders[0]['side'] == 'buy':
+                    # sellPrice = round(currentPrice * 1.0001)
+                    # buyPrice = round(currentPrice / 1.0001)
+                    #
+                    # if orderSell:
+                    #     returnOrderSell = exchangeBinance.create_order(**orderSell)
+                    #     clientOrderSellId = returnOrderSell['clientOrderId']
+                    #     lastPriceSell = returnOrderSell['price']
+                    #
+                    # if orderBuy:
+                    #     returnOrderBuy = exchangeBinance.create_order(**orderBuy)
+                    #     clientOrderBuyId = returnOrderBuy['clientOrderId']
+                    #     lastPriceBuy = returnOrderSell['price']
+
+                # if openOrders[0]['side'] == 'sell':
+                #     sellPrice = round(lastPriceSell * 1.0001)
+                #     buyPrice = round(lastPriceSell / 1.0001)
+                #
+                #     if orderSell:
+                #         returnOrderSell = exchangeBinance.create_order(**orderSell)
+                #         clientOrderSellId = returnOrderSell['clientOrderId']
+                #         lastPriceSell = returnOrderSell['price']
+                #
+                #     if orderBuy:
+                #         returnOrderBuy = exchangeBinance.create_order(**orderBuy)
+                #         clientOrderBuyId = returnOrderBuy['clientOrderId']
+                #         lastPriceBuy = returnOrderSell['price']
+
+
+
+
+
+
+
+                #
+                # if orderSell:
+                #     returnOrderSell = exchangeBinance.create_order(**orderSell)
+                #     clientOrderSellId = returnOrderSell['clientOrderId']
+
+
+
+
+
+            # balance = exchangeBinance.fetch_balance()
+            # openOrders = exchangeBinance.fetch_open_orders(symbol)
+            # closedOrders = exchangeBinance.fetch_closed_orders(symbol)
+            # lastPrices = exchange.fetch_last_prices(symbol)
+            # tickerData = exchangeBinance.fetch_ticker(symbol)
+            # currentPrice = tickerData['last']
+            # print(currentPrice, buyPrice, sellPrice)
+            # print('-----------------')
+
+
+
+
+
 
 
 
@@ -81,66 +206,6 @@ if __name__ == "__main__":
 
 
 
-# exchangeBinance = ccxt.binance({
-#     'apiKey': config.API_KEY,
-#     'secret': config.API_SECRET,
-#     'enableRateLimit': True,
-#
-#     'options': {
-#         'defaultType': 'future',
-#         'urls': {
-#             'api': 'https://testnet.binancefuture.com',
-#             'test': 'https://testnet.binancefuture.com',
-#         },
-#     },
-#     })
-#
-# # Переключаем ccxt на песочницу Бинанса
-# exchangeBinance.set_sandbox_mode(True)
-#
-#
-# symbol = 'BTCUSDT'  # выбираем торговую пару
-# buyPrice = 0  # устанавливаем начальную цену покупки
-# sellPrice = 0  # устанавливаем начальную цену покупки
-# amount = 0.01  # устанавливаем объем монет для покупки
-# # profit_percent = 1  # задаем процент прибыли
-#
-#
-# balance = exchangeBinance.fetch_balance()
-# openOrders = exchangeBinance.fetch_open_orders(symbol)
-# closedOrders = exchangeBinance.fetch_closed_orders(symbol)
-# # lastPrices = exchange.fetch_last_prices(symbol)
-#
-#
-# tickerData = exchangeBinance.fetch_ticker(symbol)
-# currentPrice = tickerData['last']
-#
-# sellPrice = round(currentPrice * 1.02)
-# buyPrice = round(currentPrice / 1.02)
-#
-#
-# orderBuy = dict(symbol=symbol, type='limit', side='buy', price=buyPrice, amount=amount)
-# orderSell = dict(symbol=symbol, type='limit', side='sell', price=sellPrice, amount=amount)
-#
-#
-# print(currentPrice, buyPrice, sellPrice)
-# print('-----------------')
-#
-#
-# if orderBuy:
-#     retOrdBuy = exchangeBinance.create_order(**orderBuy)
-#
-# if orderSell:
-#     retOrdSell = exchangeBinance.create_order(**orderSell)
-#
-# clientOrderSellId = retOrdSell['clientOrderId']
-# clientOrderBuyId = retOrdBuy['clientOrderId']
-#
-#
-#
-#
-#
-# print('-----------------')
 
 
 
