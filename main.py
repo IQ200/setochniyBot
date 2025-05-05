@@ -50,9 +50,11 @@ while True:
     # Составить сетку ордеров
     setOrders[11] = int(lastPrice)
     lenDrobChast = len(str(lastPrice).split(".")[1])
-    zeroFiveProcent = round(lastPrice * 0.005, lenDrobChast)
+    # zeroFiveProcent = round(lastPrice * 0.005, lenDrobChast)
+    zeroFiveProcent = lastPrice * 0.005
 
     setOrders = {a: round(a * zeroFiveProcent + (lastPrice-zeroFiveProcent*10), lenDrobChast) for a in range(21)}
+    # setOrders01 = {a: a * zeroFiveProcent + (lastPrice - zeroFiveProcent * 10) for a in range(21)}
     # try:
 
     time.sleep(100)
